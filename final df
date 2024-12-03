@@ -1,4 +1,4 @@
-new_id       date    sum_ham   mean_ham    consent
+    new_id    date   sum_ham   mean_ham    consent
 1    2005 2012-11-07       7 0.41176471 2012-07-05
 2    2027 2003-04-20      26 1.52941176 2003-04-20
 3    2056 2005-04-18      26 1.52941176 2005-04-18
