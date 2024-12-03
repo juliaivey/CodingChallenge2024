@@ -1,0 +1,42 @@
+> ggplot(summary_by_age, aes(x = RecruitSource, y = Total_Participants, fill = Age)) +
++     geom_bar(stat = "identity", position = "dodge") +
++     theme_minimal() +
++     labs(title = "Number of Participants by Source and Age",
++          x = "Source",
++          y = "Total Participants")
+> ggplot(total_by_source, aes(x = RecruitSource, y = Total_Participants)) +
++     geom_bar(stat = "identity") +
++     theme_minimal() +
++     labs(title = "Total Number of Participants by Source",
++          x = "Source",
++          y = "Total Participants")
+  
+> summary_by_age <- recruitment_data %>%
++     group_by(RecruitSource, Age) %>%
++     summarise(Total_Participants = n())
+> ggplot(summary_by_age, aes(x = RecruitSource, y = Total_Participants, fill = Age)) +
++     geom_bar(stat = "identity", position = "dodge") +
++     theme_minimal() +
++     labs(title = "Number of Participants by Source and Age",
++          x = "Source",
++          y = "Total Participants")
+  
+> summary_by_gender <- recruitment_data %>%
++     group_by(RecruitSource, Gender) %>%
++     summarise(Total_Participants = n())
+> ggplot(summary_by_gender, aes(x = RecruitSource, y = Total_Participants, fill = Gender)) +
++     geom_bar(stat = "identity", position = "dodge") +
++     theme_minimal() +
++     labs(title = "Number of Participants by Source and Gender",
++          x = "Source",
++          y = "Total Participants")
+  
+> summary_by_group <- recruitment_data %>%
++     group_by(RecruitSource, Group) %>%
++     summarise(Total_Participants = n())
+> ggplot(summary_by_group, aes(x = RecruitSource, y = Total_Participants, fill = Group)) +
++     geom_bar(stat = "identity", position = "dodge") +
++     theme_minimal() +
++     labs(title = "Number of Participants by Source and Group",
++          x = "Source",
++          y = "Total Participants")
