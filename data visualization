@@ -40,3 +40,4 @@
 +     labs(title = "Number of Participants by Source and Group",
 +          x = "Source",
 +          y = "Total Participants")
+
