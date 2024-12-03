@@ -1,0 +1,277 @@
+load("/Users/juliaivey/Desktop/CodeChallenge2024/CodeChallenge2024.RData")
+> install.packages("dplyr")
+trying URL 'https://cran.rstudio.com/bin/macosx/big-sur-arm64/contrib/4.3/dplyr_1.1.4.tgz'
+Content type 'application/x-gzip' length 1595883 bytes (1.5 MB)
+==================================================
+downloaded 1.5 MB
+
+
+The downloaded binary packages are in
+	/var/folders/4f/55n54qr54gx7ddn6_k98npgw0000gn/T//Rtmprgetuz/downloaded_packages
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> install.packages("tidyr")
+trying URL 'https://cran.rstudio.com/bin/macosx/big-sur-arm64/contrib/4.3/tidyr_1.3.1.tgz'
+Content type 'application/x-gzip' length 1320867 bytes (1.3 MB)
+==================================================
+downloaded 1.3 MB
+
+
+The downloaded binary packages are in
+	/var/folders/4f/55n54qr54gx7ddn6_k98npgw0000gn/T//Rtmprgetuz/downloaded_packages
+> library(tidyr)
+> 
+> names(HAM_protect)[names(HAM_protect) == "ID"] <- "old_id"
+> HAM_protect_new <- HAM_protect %>%
++ left_join(id_map, by = "old_id")
+> left_join(id_map, by = "old_id")
+Error in left_join.data.frame(id_map, by = "old_id") : 
+  argument "y" is missing, with no default
+> HAM_protect <- NULL
+> HAM_protect_new$old_id <- NULL
+> ### to remove 3a-3e data
+> HAM_protect_new$ham_3a_wl <- NULL
+> HAM_protect_new$ham_3b_wd <- NULL
+> HAM_protect_new$ham_3c_rld <- NULL
+> HAM_protect_new$ham_3d_asa <- NULL 
+> HAM_protect_new$ham_3e_pdw <- NULL
+> ### to remove 3a-3e data (
+> HAM_sleep$ham_3a_wl <- NULL
+> HAM_sleep$ham_3b_wd <- NULL
+> HAM_sleep$ham_3c_rld <- NULL
+> HAM_sleep$ham_3d_asa <- NULL 
+> HAM_sleep$ham_3e_pdw <- NULL
+> 
+> HAM_protect_new <- HAM_protect_new %>%
++     filter(!is.na(ham_1_dm))
+> 
+> columns_to_sum <- grep("^ham_", names(HAM_protect_new), value = TRUE)
+> HAM_protect_new[, columns_to_sum] <- lapply(HAM_protect_new[, columns_to_sum], function(x) as.numeric(as.character(x)))
+Warning message:
+In FUN(X[[i]], ...) : NAs introduced by coercion
+> HAM_protect_new$sum_ham_protect <- rowSums(HAM_protect_new[, columns_to_sum], na.rm = TRUE)
+> 
+> columns_to_sum <- grep("^ham_", names(HAM_sleep), value = TRUE)
+> HAM_sleep[, columns_to_sum] <- lapply(HAM_sleep[, columns_to_sum], function(x) as.numeric(as.character(x)))
+> HAM_sleep$sum_ham_sleep <- rowSums(HAM_sleep[, columns_to_sum], na.rm = TRUE)
+> 
+> 
+> columns_to_mean <- grep("^ham_", names(HAM_sleep), value = TRUE)
+> HAM_sleep$mean_ham_sleep <- rowMeans(HAM_sleep[, columns_to_mean], na.rm = TRUE) 
+> 
+> columns_to_mean <- grep("^ham_", names(HAM_protect_new), value = TRUE)
+> HAM_protect_new$mean_ham_protect <- rowMeans(HAM_protect_new[, columns_to_mean], na.rm = TRUE)
+> 
+> names(HAM_sleep)[names(HAM_sleep) == "ID"] <- "new_id"
+> columns_to_remove <- grep("^ham_", names(HAM_sleep), value = TRUE)
+> HAM_sleep <- HAM_sleep[, !names(HAM_sleep) %in% columns_to_remove]
+> 
+> columns_to_remove <- grep("^ham_", names(HAM_protect_new), value = TRUE)
+> HAM_protect_new <- HAM_protect_new[, !names(HAM_protect_new) %in% columns_to_remove]
+> 
+> HAM_sleep$timepoint <- NULL
+> names(HAM_sleep)[names(HAM_sleep) == "bq_date"] <- "bq_sleep" 
+> names(HAM_sleep)[names(HAM_sleep) == "fug_date"] <- "fug_sleep"
+> 
+> HAM_protect_new$timepoint <- NULL
+> names(HAM_protect_new)[names(HAM_protect_new) == "bq_date"] <- "bq_protect"
+> names(HAM_protect_new)[names(HAM_protect_new) == "fug_date"] <- "fug_protect"
+> 
+> 
+> date_cols <- c('reg_condate_protect', 'reg_condate_protect2', 'reg_condate_protect3', 'reg_condate_suicid2', 'reg_condate_suicide')
+> consent_date[date_cols] <- lapply(consent_date[date_cols], as.Date, format = "%Y-%m-%d")
+> earliest_dates <- consent_date %>%
++     group_by(ID) %>%
++     summarize(earliest_date = min(c_across(all_of(date_cols)), na.rm = TRUE))
+Warning message:
+There were 21 warnings in `summarize()`.
+The first warning was:
+ℹ In argument: `earliest_date = min(c_across(all_of(date_cols)), na.rm = TRUE)`.
+ℹ In group 1: `ID = 1000`.
+Caused by warning in `min.default()`:
+! no non-missing arguments to min; returning Inf
+ℹ Run dplyr::last_dplyr_warnings() to see the 20 remaining warnings. 
+> 
+> 
+> merged_data <- merge(HAM_sleep, HAM_protect_new, by = "new_id", all = TRUE)
+> names(earliest_dates)[names(earliest_dates) == "ID"] <- "new_id"
+> data <- merge(merged_data, earliest_dates, by = "new_id", all = TRUE)
+> names(data)[names(data) == "earliest_date"] <- "consent"
+> 
+> hamdate_cols <- c('bq_sleep', 'bq_protect', 'fug_sleep', 'fug_protect')
+> data$consent <- as.Date(data$consent, format = "%Y-%m-%d")
+> data <- data %>%
++     mutate(target = consent + 365)
+> find_closest_date <- function(target, consent_date, dates) {
++     dates <- dates[!is.na(dates)]
++     if (length(dates) == 0) return(NA)
++     
++     later_dates <- dates[dates > consent_date]
++     if (length(later_dates) > 0) {
++         closest_date <- later_dates[which.min(abs(later_dates - target))]
++     } else {
++         closest_date <- dates[which.min(abs(dates - target))]
++     }
++     
++     return(closest_date)
++ }
+> 
+> data <- data %>%
++     rowwise() %>%
++     mutate(closest_to_consent = find_closest_date(target, consent, c_across(all_of(hamdate_cols))))
+> 
+> View(data)
+> find_closest_date <- function(target, dates) {
++     dates <- dates[!is.na(dates)]
++     if (length(dates) == 0) return(NA)
++     
++     closest_date <- dates[which.min(abs(dates - target))]
++     return(closest_date)
++ }
+> 
+> data <- data %>%
++     rowwise() %>%
++     mutate(closest_date = find_closest_date(target, c_across(all_of(hamdate_cols)))) %>%
++     ungroup()
+> 
+> data <- data %>%
++     group_by(new_id) %>%
++     filter(any(c_across(all_of(hamdate_cols)) == closest_date)) %>%
++     slice(1) %>%
++     ungroup()
+> 
+> 
+> head(data)
+# A tibble: 6 × 13
+  new_id bq_sleep   fug_sleep sum_ham_sleep mean_ham_sleep bq_protect fug_protect
+   <dbl> <date>     <date>            <dbl>          <dbl> <date>     <date>     
+1   2005 NA         NA                   NA         NA     NA         2012-11-07 
+2   2027 NA         NA                   NA         NA     2003-04-20 NA         
+3   2056 NA         NA                   NA         NA     2005-04-18 NA         
+4   2068 2024-01-08 NA                   15          0.882 NA         2019-01-20 
+5   2069 2023-11-22 NA                    7          0.412 NA         2019-01-31 
+6   2072 NA         NA                   NA         NA     2014-03-30 NA         
+# ℹ 6 more variables: sum_ham_protect <dbl>, mean_ham_protect <dbl>, consent <date>,
+#   target <date>, closest_to_consent <date>, closest_date <date>
+> data$target <- NULL
+> data$closest_to_consent <- NULL
+> duplicate_data <- data
+> 
+> View(duplicate_data)
+> result <- data.frame(new_id = integer(), date = as.Date(character()), sum_ham = numeric(), mean_ham = numeric(), consent = as.Date(character()))
+> 
+> for (i in 1:nrow(data)) {
++     closest_date <- data$closest_date[i]
++     if (!is.na(data$fug_protect[i]) && data$fug_protect[i] == closest_date) {
++         result <- rbind(result, data.frame(new_id = data$new_id[i], date = data$fug_protect[i], sum_ham = data$sum_ham_protect[i], mean_ham = data$mean_ham_protect[i], consent = data$consent[i]))
++     } else if (!is.na(data$bq_protect[i]) && data$bq_protect[i] == closest_date) {
++         result <- rbind(result, data.frame(new_id = data$new_id[i], date = data$bq_protect[i], sum_ham = data$sum_ham_protect[i], mean_ham = data$mean_ham_protect[i], consent = data$consent[i]))
++     } else if (!is.na(data$fug_sleep[i]) && data$fug_sleep[i] == closest_date) {
++         result <- rbind(result, data.frame(new_id = data$new_id[i], date = data$fug_sleep[i], sum_ham = data$sum_ham_sleep[i], mean_ham = data$mean_ham_sleep[i], consent = data$consent[i]))
++     } else if (!is.na(data$bq_sleep[i]) && data$bq_sleep[i] == closest_date) {
++         result <- rbind(result, data.frame(new_id = data$new_id[i], date = data$bq_sleep[i], sum_ham = data$sum_ham_sleep[i], mean_ham = data$mean_ham_sleep[i], consent = data$consent[i]))
++     }
++ }
+> print(result)
+   new_id       date sum_ham   mean_ham    consent
+1    2005 2012-11-07       7 0.41176471 2012-07-05
+2    2027 2003-04-20      26 1.52941176 2003-04-20
+3    2056 2005-04-18      26 1.52941176 2005-04-18
+4    2068 2019-01-20      22 1.29411765 2018-01-16
+5    2069 2019-01-31       9 0.52941176 2018-10-09
+6    2072 2014-03-30      30 1.76470588 2014-03-30
+7    2074 2017-10-25      25 1.47058824 2017-08-08
+8    2086 2006-02-09      32 1.88235294 2006-02-09
+9    2090 2016-10-30      17 1.00000000 2016-10-30
+10   2104 2006-10-28      22 1.29411765 2006-10-26
+11   2110 2007-01-24      21 1.23529412 2007-01-30
+12   2149 2007-08-23      33 1.94117647 2007-08-23
+13   2162 2007-11-20      20 1.17647059 2007-12-02
+14   2202 2008-07-22      27 1.58823529 2008-08-05
+15   2203 2008-07-23      15 0.88235294 2008-08-09
+16   2215 2009-12-13      19 1.11764706 2008-09-29
+17   2218 2016-12-26      24 1.41176471 2016-12-26
+18   2227 2009-02-16      29 1.70588235 2009-02-15
+19   2263 2011-06-17       1 0.05882353 2010-05-28
+20   2267 2010-08-11      27 1.58823529 2010-08-11
+21   2274 2019-03-12      20 1.17647059 2019-03-12
+22   2292 2011-04-07      21 1.23529412 2011-04-07
+23   2294 2015-03-24      18 1.05882353 2015-03-24
+24   2297 2011-06-02      17 1.00000000 2011-06-02
+25   2306 2011-11-10       4 0.23529412 2011-08-24
+26   2320 2017-10-18      10 0.58823529 2011-12-04
+27   2329 2014-01-27       9 0.52941176 2012-01-26
+28   2333 2022-04-05       7 0.41176471 2012-04-01
+29   2341 2012-07-16      27 1.58823529 2012-07-16
+30   2343 2013-02-21      17 1.00000000 2013-02-21
+31   2347 2021-10-05       9 0.52941176 2013-02-05
+32   2356 2020-08-19       5 0.29411765 2017-08-01
+33   2357 2013-03-24      38 2.23529412 2013-03-24
+34   2358 2013-08-01      16 0.94117647 2013-08-01
+35   2364 2017-03-02      32 1.88235294 2013-09-22
+36   2368 2013-12-17      13 0.76470588 2013-12-17
+37   2379 2014-08-14      30 1.76470588 2014-08-14
+38   2390 2015-05-04      30 1.76470588 2015-05-04
+39   2396 2015-10-01      10 0.58823529 2015-07-17
+40   2398 2016-09-05       6 0.35294118 2015-08-26
+41   2407 2015-11-23      22 1.29411765 2015-11-23
+42   2408 2016-02-22      18 1.05882353 2015-11-23
+43   2411 2016-01-04      31 1.82352941 2016-01-04
+44   2425 2019-06-11       4 0.23529412 2016-04-13
+45   2431 2023-08-06      25 1.47058824 2016-07-10
+46   2432 2018-08-02      18 1.05882353 2016-07-25
+47   2442 2019-09-22       3 0.17647059 2016-10-05
+48   2443 2023-09-17       9 0.52941176 2016-10-11
+49   2447 2019-10-15      13 0.76470588 2016-10-21
+50   2448 2016-10-26      33 1.94117647 2016-10-26
+51   2450 2024-01-25      20 1.17647059 2016-10-30
+52   2452 2016-11-15      19 1.11764706 2016-11-15
+53   2453 2021-12-12       2 0.11764706 2016-11-28
+54   2456 2018-01-16       3 0.17647059 2017-01-19
+55   2463 2017-03-30      24 1.41176471 2017-03-30
+56   2465 2017-04-18      17 1.00000000 2017-04-18
+57   2466 2019-04-11      25 1.47058824 2017-04-24
+58   2467 2021-06-09       2 0.11764706 2017-05-25
+59   2472 2017-06-21      12 0.70588235 2017-06-21
+60   2478 2019-07-21      12 0.70588235 2017-07-17
+61   2483 2017-09-19      18 1.05882353 2017-09-19
+62   2485 2017-10-02      15 0.88235294 2017-10-02
+63   2502 2024-12-23      12 0.70588235 2017-12-27
+64   2505 2024-01-21       0        NaN 2020-01-06
+65   2507 2024-06-24      16 0.94117647 2018-01-08
+66   2513 2019-02-12       8 0.47058824 2018-01-23
+67   2517 2020-02-02      25 1.47058824 2018-01-31
+68   2519 2018-02-12      14 0.82352941 2018-02-12
+69   2521 2024-03-28       0        NaN 2018-02-20
+70   2526 2022-05-04       4 0.23529412 2018-03-14
+71   2527 2018-03-22      31 1.82352941 2018-03-22
+72   2528 2020-04-05       4 0.25000000 2018-03-13
+73   2535 2018-07-22      24 1.41176471 2018-05-09
+74   2539 2021-06-01      17 1.00000000 2018-06-06
+75   2549 2023-08-01       4 0.23529412 2018-07-26
+76   2555 2022-10-12       8 0.47058824 2018-08-23
+77   2566 2018-12-03      17 1.00000000 2018-12-03
+78   2570 2023-02-05      16 0.94117647 2019-02-21
+79   2571 2020-08-18      18 1.05882353 2019-03-10
+80   2572 2020-03-22       4 0.23529412 2019-03-10
+81   2601 2024-06-26      11 0.64705882 2015-08-02
+82   2602 2016-04-12      24 1.41176471 2016-04-12
+83   2603 2016-07-26      25 1.47058824 2016-07-26
+84   2617 2019-12-03       6 0.35294118 2019-08-12
+85   2648 2020-06-30      19 1.11764706 2020-06-30
+86   2668 2023-12-03      18 1.05882353 2020-10-12
+87   2672 2020-10-26      15 0.88235294 2020-10-26
+88   2673 2021-02-03      14 0.82352941 2020-10-28
+89   2674 2020-11-10      24 1.41176471 2020-11-10
+90   2734 2021-11-10      19 1.11764706 2021-10-18
+91   2779 2023-09-26       8 0.47058824 2022-10-12
