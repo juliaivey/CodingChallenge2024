@@ -34,18 +34,14 @@ The downloaded binary packages are in
 > names(HAM_protect)[names(HAM_protect) == "ID"] <- "old_id"
 > HAM_protect_new <- HAM_protect %>%
 + left_join(id_map, by = "old_id")
-> left_join(id_map, by = "old_id")
-Error in left_join.data.frame(id_map, by = "old_id") : 
-  argument "y" is missing, with no default
+
 > HAM_protect <- NULL
 > HAM_protect_new$old_id <- NULL
-> ### to remove 3a-3e data
 > HAM_protect_new$ham_3a_wl <- NULL
 > HAM_protect_new$ham_3b_wd <- NULL
 > HAM_protect_new$ham_3c_rld <- NULL
 > HAM_protect_new$ham_3d_asa <- NULL 
 > HAM_protect_new$ham_3e_pdw <- NULL
-> ### to remove 3a-3e data (
 > HAM_sleep$ham_3a_wl <- NULL
 > HAM_sleep$ham_3b_wd <- NULL
 > HAM_sleep$ham_3c_rld <- NULL
@@ -93,14 +89,7 @@ In FUN(X[[i]], ...) : NAs introduced by coercion
 > earliest_dates <- consent_date %>%
 +     group_by(ID) %>%
 +     summarize(earliest_date = min(c_across(all_of(date_cols)), na.rm = TRUE))
-Warning message:
-There were 21 warnings in `summarize()`.
-The first warning was:
-ℹ In argument: `earliest_date = min(c_across(all_of(date_cols)), na.rm = TRUE)`.
-ℹ In group 1: `ID = 1000`.
-Caused by warning in `min.default()`:
-! no non-missing arguments to min; returning Inf
-ℹ Run dplyr::last_dplyr_warnings() to see the 20 remaining warnings. 
+
 > 
 > 
 > merged_data <- merge(HAM_sleep, HAM_protect_new, by = "new_id", all = TRUE)
@@ -151,23 +140,10 @@ Caused by warning in `min.default()`:
 +     ungroup()
 > 
 > 
-> head(data)
-# A tibble: 6 × 13
-  new_id bq_sleep   fug_sleep sum_ham_sleep mean_ham_sleep bq_protect fug_protect
-   <dbl> <date>     <date>            <dbl>          <dbl> <date>     <date>     
-1   2005 NA         NA                   NA         NA     NA         2012-11-07 
-2   2027 NA         NA                   NA         NA     2003-04-20 NA         
-3   2056 NA         NA                   NA         NA     2005-04-18 NA         
-4   2068 2024-01-08 NA                   15          0.882 NA         2019-01-20 
-5   2069 2023-11-22 NA                    7          0.412 NA         2019-01-31 
-6   2072 NA         NA                   NA         NA     2014-03-30 NA         
-# ℹ 6 more variables: sum_ham_protect <dbl>, mean_ham_protect <dbl>, consent <date>,
-#   target <date>, closest_to_consent <date>, closest_date <date>
+
 > data$target <- NULL
 > data$closest_to_consent <- NULL
-> duplicate_data <- data
-> 
-> View(duplicate_data)
+
 > result <- data.frame(new_id = integer(), date = as.Date(character()), sum_ham = numeric(), mean_ham = numeric(), consent = as.Date(character()))
 > 
 > for (i in 1:nrow(data)) {
